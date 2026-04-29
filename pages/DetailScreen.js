@@ -23,12 +23,12 @@ export default function DetailScreen({ route }) {
 
         <View style={styles.row}>
           <Text style={styles.label}>Ruangan:</Text>
-          <Text style={styles.value}>{dataPresensi.room}</Text>
+          <Text style={styles.value}>{dataPresensi.ruangan}</Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Dosen Pengampu:</Text>
-          <Text style={styles.value}>{dataPresensi.lecturer}</Text>
+          <Text style={styles.value}>{dataPresensi.dosenPengampu}</Text>
         </View>
       </View>
     </SafeAreaView>
