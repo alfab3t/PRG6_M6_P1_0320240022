@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'Presensi API dengan Spring Boot dan SQLite'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // JPA untuk ORM
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Web starter untuk REST API
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // SQLite JDBC driver
+    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
+
+    // Hibernate dialects (supaya SQLite dikenali)
+    implementation 'org.hibernate.orm:hibernate-community-dialects:6.4.4.Final'
+
+    // Testing starter
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
