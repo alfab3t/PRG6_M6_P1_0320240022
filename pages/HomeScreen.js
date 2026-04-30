@@ -8,7 +8,7 @@ import { AuthContext } from '../context/AuthContext'; // 1. Import Context
 
 const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
   // Ambil data user dari Context
-  const { userData } = useContext(AuthContext);
+  const { userData, logout } = useContext(AuthContext);
 
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [currentTime, setCurrentTime] = useState('Memuat jam...');
@@ -47,7 +47,7 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
       kodeMk: "TRPL205",
       course: "Mobile Programming",
       status: "Present",
-      nimMhs: userData.nim_mhs,
+      nimMhs: userData.mhsNim,
       pertemuanKe: 5,
       date: now.toISOString().split('T')[0],                              // Ubah tgl_pertemuan
       jamPresensi: now.toLocaleTimeString('id-ID', { hour12: false }),    // Ubah jam_presensi
@@ -70,7 +70,7 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
       if (response.ok) {
         setIsCheckedIn(true);
         Alert.alert("Berhasil!", "Presensi masuk ke Database Java Spring.", [
-          { text: "Lihat Riwayat", onPress: () => navigation.navigate('HistoryTab') }
+          { text: "Lihat Riwayat", onPress: () => navigation.navigate('History') }
         ]);
       } else {
         Alert.alert("Gagal", result.message || "Terjadi kesalahan di server.");
@@ -90,6 +90,10 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
         <View style={styles.headerRow}>
           <Text style={styles.title}>Attendance App</Text>
           <Text style={styles.clockText}>{currentTime}</Text>
+          {/* Tombol Logout */}
+          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Student Card */}
@@ -98,9 +102,9 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
             <MaterialIcons name="person" size={40} color="#555" />
           </View>
           <View>
-            <Text style={styles.name}>{userData.nama}</Text>
-            <Text>NIM : {userData.nim_mhs}</Text>
-            <Text>Class : Informatika-2B</Text>
+            <Text style={styles.name}>{userData.mhsName}</Text>
+            <Text>NIM : {userData.mhsNim}</Text>
+            <Text>Class : {userData.prodi}</Text>
           </View>
         </View>
 
@@ -174,4 +178,6 @@ const styles = StyleSheet.create({
   statBox: { alignItems: 'center' },
   statNumber: { fontSize: 24, fontWeight: 'bold', color: 'green' },
   statLabel: { fontSize: 14, color: 'gray' },
+  logoutButton: { marginLeft: 12, backgroundColor: '#d9534f', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6 },
+  logoutText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
 });

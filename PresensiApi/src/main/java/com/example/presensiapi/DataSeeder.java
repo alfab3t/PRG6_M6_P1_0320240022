@@ -17,8 +17,22 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired
     private PresensiRepository repository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     public void run(String... args) throws Exception {
+        // Seed data user
+        if (userRepository.count() == 0) {
+            User user = new User();
+            user.setMhsNim("0325260031");
+            user.setPassword("123456");
+            user.setMhsName("Budi Susanto");
+            user.setProdi("Informatika-2B");
+            userRepository.save(user);
+            System.out.println("Data user dummy berhasil disimpan!");
+        }
+
         // Cek apakah tabel presensi masih kosong?
         if (repository.count() == 0) {
             System.out.println("Tabel Presensi kosong. Sedang mem-generate 200 data dummy...");
