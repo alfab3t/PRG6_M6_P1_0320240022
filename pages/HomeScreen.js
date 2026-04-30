@@ -1,27 +1,24 @@
-import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import {
   View, Text, SafeAreaView, StyleSheet,
-  TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator
+  TouchableOpacity, ScrollView, Alert, ActivityIndicator
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AuthContext } from '../context/AuthContext'; // 1. Import Context
+import { AuthContext } from '../context/AuthContext';
+import QRScanner from '../components/QRScanner';
 
-const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
-  // Ambil data user dari Context
+const HomeScreen = ({ navigation }) => {
   const { userData, logout } = useContext(AuthContext);
 
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [currentTime, setCurrentTime] = useState('Memuat jam...');
-  const [note, setNote] = useState('');
-  const [isPosting, setIsPosting] = useState(false); // State untuk loading API
-  const noteInputRef = useRef(null);
+  const [isPosting, setIsPosting] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [kelasInfo, setKelasInfo] = useState(null); // data dari QR
 
-  // IP Laptop (Wi-Fi: polman.astra.ac.id)
   const BASE_URL = "http://10.1.11.115:8080/api/presensi";
 
-  const attendanceStats = useMemo(() => {
-    return { totalPresent: 12, totalAbsent: 2 };
-  }, []);
+  const attendanceStats = useMemo(() => ({ totalPresent: 12, totalAbsent: 2 }), []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -30,47 +27,50 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
     return () => clearInterval(timer);
   }, []);
 
-  // 3. FUNGSI POST API
-  const handleCheckIn = async () => {
-    if (isCheckedIn) return Alert.alert("Perhatian", "Anda sudah Check In.");
-    if (note.trim() === '') {
-      Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!");
-      noteInputRef.current.focus();
+  // Dipanggil setelah QR berhasil di-scan
+  const handleQRScanned = async (qrData) => {
+    setShowScanner(false);
+
+    if (!qrData) {
+      Alert.alert("QR Tidak Valid", "Format QR Code tidak dikenali.");
       return;
     }
 
-    setIsPosting(true);
-    const now = new Date();
+    if (isCheckedIn) {
+      Alert.alert("Perhatian", "Anda sudah Check In.");
+      return;
+    }
 
-    // Siapkan Payload JSON sesuai DTO Java Spring (Camel Case)
+    setKelasInfo(qrData);
+    setIsPosting(true);
+
+    const now = new Date();
     const payload = {
-      kodeMk: "TRPL205",
-      course: "Mobile Programming",
+      kodeMk: qrData.kodeMk,
+      course: qrData.course,
       status: "Present",
       nimMhs: userData.mhsNim,
-      pertemuanKe: 5,
-      date: now.toISOString().split('T')[0],                              // Ubah tgl_pertemuan
-      jamPresensi: now.toLocaleTimeString('id-ID', { hour12: false }),    // Ubah jam_presensi
-      ruangan: "Lab Komputer 3",
-      dosenPengampu: "Tim Dosen TRPL"
+      pertemuanKe: qrData.pertemuanKe || 1,
+      date: now.toISOString().split('T')[0],
+      jamPresensi: now.toLocaleTimeString('id-ID', { hour12: false }),
+      ruangan: qrData.ruangan,
+      dosenPengampu: qrData.dosenPengampu,
     };
 
     try {
       const response = await fetch(BASE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
 
       if (response.ok) {
         setIsCheckedIn(true);
-        Alert.alert("Berhasil!", "Presensi masuk ke Database Java Spring.", [
-          { text: "Lihat Riwayat", onPress: () => navigation.navigate('History') }
+        Alert.alert("Berhasil!", `Presensi ${qrData.course} tercatat.`, [
+          { text: "Lihat Riwayat", onPress: () => navigation.navigate('History') },
+          { text: "OK" }
         ]);
       } else {
         Alert.alert("Gagal", result.message || "Terjadi kesalahan di server.");
@@ -90,7 +90,6 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
         <View style={styles.headerRow}>
           <Text style={styles.title}>Attendance App</Text>
           <Text style={styles.clockText}>{currentTime}</Text>
-          {/* Tombol Logout */}
           <TouchableOpacity onPress={logout} style={styles.logoutButton}>
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
@@ -111,18 +110,22 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
         {/* Today's Class */}
         <View style={styles.classCard}>
           <Text style={styles.subtitle}>Today's Class</Text>
-          <Text>Mobile Programming (TRPL205)</Text>
-          <Text>08:00 - 10:00</Text>
-          <Text>Lab 3</Text>
 
-          {!isCheckedIn && (
-            <TextInput
-              ref={noteInputRef}
-              style={styles.inputCatatan}
-              placeholder="Tulis catatan (cth: Hadir lab)"
-              value={note}
-              onChangeText={setNote}
-            />
+          {kelasInfo ? (
+            // Tampilkan info kelas dari hasil scan QR
+            <>
+              <Text style={styles.kelasNama}>{kelasInfo.course} ({kelasInfo.kodeMk})</Text>
+              <View style={styles.kelasRow}>
+                <MaterialIcons name="room" size={16} color="#666" />
+                <Text style={styles.kelasDetail}> {kelasInfo.ruangan}</Text>
+              </View>
+              <View style={styles.kelasRow}>
+                <MaterialIcons name="person-outline" size={16} color="#666" />
+                <Text style={styles.kelasDetail}> {kelasInfo.dosenPengampu}</Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.scanHint}>Scan QR Code untuk melihat info kelas</Text>
           )}
 
           {isPosting ? (
@@ -130,11 +133,15 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
           ) : (
             <TouchableOpacity
               style={[styles.button, isCheckedIn ? styles.buttonDisabled : styles.buttonActive]}
-              onPress={handleCheckIn}
+              onPress={() => !isCheckedIn && setShowScanner(true)}
               disabled={isCheckedIn}
             >
+              <MaterialIcons
+                name={isCheckedIn ? "check-circle" : "qr-code-scanner"}
+                size={20} color="#fff" style={{ marginRight: 8 }}
+              />
               <Text style={styles.buttonText}>
-                {isCheckedIn ? 'CHECKED IN' : 'CHECK IN SEKARANG'}
+                {isCheckedIn ? 'CHECKED IN' : 'SCAN QR & CHECK IN'}
               </Text>
             </TouchableOpacity>
           )}
@@ -152,6 +159,13 @@ const HomeScreen = ({ navigation }) => { // 2. Tambahkan prop navigation
           </View>
         </View>
       </ScrollView>
+
+      {/* QR Scanner Modal */}
+      <QRScanner
+        visible={showScanner}
+        onScanned={handleQRScanned}
+        onClose={() => setShowScanner(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -168,9 +182,12 @@ const styles = StyleSheet.create({
   icon: { marginRight: 15 },
   name: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   classCard: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15, elevation: 2 },
-  subtitle: { fontSize: 15, fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  inputCatatan: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginTop: 12, backgroundColor: '#fafafa' },
-  button: { marginTop: 12, padding: 14, borderRadius: 8, alignItems: 'center' },
+  subtitle: { fontSize: 15, fontWeight: 'bold', color: '#333', marginBottom: 8 },
+  scanHint: { color: '#aaa', fontSize: 13, marginBottom: 4 },
+  kelasNama: { fontSize: 15, fontWeight: 'bold', color: '#0056A0', marginBottom: 6 },
+  kelasRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
+  kelasDetail: { fontSize: 13, color: '#555' },
+  button: { marginTop: 12, padding: 14, borderRadius: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
   buttonActive: { backgroundColor: '#0056A0' },
   buttonDisabled: { backgroundColor: '#A8C4FF' },
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 14, letterSpacing: 1 },

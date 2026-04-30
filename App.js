@@ -10,6 +10,7 @@ import LoginScreen from './pages/LoginScreen';
 import HomeScreen from './pages/HomeScreen';
 import HistoryScreen from './pages/HistoryScreen';
 import DetailScreen from './pages/DetailScreen';
+import QRGeneratorScreen from './pages/QRGeneratorScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -50,6 +51,14 @@ function AppTabs() {
         options={{
           tabBarLabel: 'Riwayat',
           tabBarIcon: ({ color }) => <MaterialIcons name="history" size={24} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="QRGenerator"
+        component={QRGeneratorScreen}
+        options={{
+          tabBarLabel: 'QR Kelas',
+          tabBarIcon: ({ color }) => <MaterialIcons name="qr-code" size={24} color={color} />,
         }}
       />
     </Tab.Navigator>
